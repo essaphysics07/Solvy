@@ -126,8 +126,7 @@ export function SolverWorkspace() {
     setMessage("");
     setSolution(undefined);
     controller.current = new AbortController();
-    const timer = setTimeout(() => controller.current?.abort(), 30000);
-    try {
+const timer = setTimeout(() => controller.current?.abort(), 120000);    try {
       const result = await solveProblem(
         { problem, subject, explanationLevel: level, image: file },
         controller.current.signal,
