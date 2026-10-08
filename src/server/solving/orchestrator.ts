@@ -76,7 +76,9 @@ export async function solve(
   dependencies: SolveDependencies,
   signal?: AbortSignal,
 ): Promise<Solution> {
-  if (signal?.aborted) throw abortError(signal);
+  if (signal?.aborted) {
+    throw abortError(signal);
+  }
 
   const interpretation = understand(input);
 
@@ -93,83 +95,93 @@ export async function solve(
   if (interpretation.status === "understood") {
     const problem = interpretation.problem;
 
-    // Route the generic problem representation before touching
-    // the executable knowledge layer.
-    const route = routeProblem(interpretation.representation);
+    const knowledge = dependencies.knowledge.retrieve(problem.concept);
 
-    if (route.status === "matched") {
-      const knowledge = dependencies.knowledge.retrieve(problem.concept);
-      const pattern = knowledge
-        && executablePattern(knowledge, route.pattern ?? problem.pattern);
-
-      const method = knowledge?.methods.find(
-        item => item.id === pattern?.method,
+    if (knowledge) {
+      const route = routeProblem(
+        interpretation.representation,
+        knowledge,
       );
 
-      const executor = method && executors[method.executor];
-
-      if (knowledge && pattern && executor) {
-        let result: ComputedResult;
-
-        try {
-          result = executor(problem, knowledge);
-        } catch {
-          throw new SolvyError(
-            "UNSUPPORTED",
-            "The deterministic calculation exceeded its supported limits. Please simplify the problem.",
-            422,
-          );
-        }
-
-        const calculationReport = verify(problem, result, knowledge);
-
-        if (
-          calculationReport.status !== "VERIFIED_WITHIN_SCOPE"
-        ) {
-          throw new SolvyError(
-            "VERIFICATION_FAILED",
-            "The calculation did not pass independent checks. No verified answer was produced.",
-            422,
-          );
-        }
-
-        const content = explain(
-          problem,
-          result,
-          input.explanationLevel,
-        );
-
-        const report = verify(
-          problem,
-          result,
+      if (route.status === "matched" && route.pattern) {
+        const pattern = executablePattern(
           knowledge,
-          content,
-          input.explanationLevel,
+          route.pattern,
         );
 
-        if (report.status !== "VERIFIED_WITHIN_SCOPE") {
-          throw new SolvyError(
-            "VERIFICATION_FAILED",
-            "The explanation did not match the checked calculation.",
-            422,
-          );
-        }
+        const method = knowledge.methods.find(
+          item => item.id === pattern?.method,
+        );
 
-        solution = {
-          id: randomUUID(),
-          ...parseSolutionContent(content),
-          verification: report,
-          provenance: {
-            engine: "deterministic",
-            engineVersion: "1.0.0",
-            knowledge: [
-              {
-                id: knowledge.id,
-                revision: knowledge.metadata.revision,
-              },
-            ],
-          },
-        };
+        const executor = method && executors[method.executor];
+
+        if (pattern && method && executor) {
+          let result: ComputedResult;
+
+          try {
+            result = executor(problem, knowledge);
+          } catch {
+            throw new SolvyError(
+              "UNSUPPORTED",
+              "The deterministic calculation exceeded its supported limits. Please simplify the problem.",
+              422,
+            );
+          }
+
+          const calculationReport = verify(
+            problem,
+            result,
+            knowledge,
+          );
+
+          if (
+            calculationReport.status !== "VERIFIED_WITHIN_SCOPE"
+          ) {
+            throw new SolvyError(
+              "VERIFICATION_FAILED",
+              "The calculation did not pass independent checks. No verified answer was produced.",
+              422,
+            );
+          }
+
+          const content = explain(
+            problem,
+            result,
+            input.explanationLevel,
+          );
+
+          const report = verify(
+            problem,
+            result,
+            knowledge,
+            content,
+            input.explanationLevel,
+          );
+
+          if (report.status !== "VERIFIED_WITHIN_SCOPE") {
+            throw new SolvyError(
+              "VERIFICATION_FAILED",
+              "The explanation did not match the checked calculation.",
+              422,
+            );
+          }
+
+          solution = {
+            id: randomUUID(),
+            ...parseSolutionContent(content),
+            verification: report,
+            provenance: {
+              engine: "deterministic",
+              engineVersion: "1.0.0",
+              knowledge: [
+                {
+                  id: knowledge.id,
+                  revision: knowledge.metadata.revision,
+                },
+              ],
+            },
+          };
+        }
       }
     }
   }
@@ -217,7 +229,9 @@ Do not claim independent verification. The application controls verification sta
     };
   }
 
-  if (signal?.aborted) throw abortError(signal);
+  if (signal?.aborted) {
+    throw abortError(signal);
+  }
 
   // Persistence is best-effort for every engine, preserving the original behavior.
   let persisted: "saved" | "skipped" | "failed";
