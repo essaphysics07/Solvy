@@ -1,5 +1,6 @@
 import { Check, Lightbulb } from "lucide-react";
 import { BlockMath } from "react-katex";
+import { VerificationStatus } from "./verification-status";
 import type { Solution } from "../types";
 
 import "katex/dist/katex.min.css";
@@ -16,7 +17,7 @@ function MathExpression({
   try {
     return (
       <div className="math-expression">
-        <BlockMath math={expression} />
+        <BlockMath math={expression} renderError={() => <span>{expression}</span>} />
       </div>
     );
   } catch {
@@ -80,8 +81,10 @@ export function SolutionCard({
           {solution.answer}
         </strong>
 
-        <Check size={20} />
+        {(isExample || solution.verification?.status === "VERIFIED_WITHIN_SCOPE") && <Check size={20} />}
       </div>
+
+      <VerificationStatus report={solution.verification} />
 
       {solution.note && (
         <p className="solution-note">

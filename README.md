@@ -1,55 +1,105 @@
 # Solvy
 
-A focused, responsive mathematics and physics workspace built with Next.js App Router, TypeScript, React, and Tailwind CSS v4.
+A mathematics and physics workspace built with Next.js, TypeScript, React, Tailwind, and KaTeX.
 
 ## Run locally
 
-Requires Node.js 20.9 or newer (Node 22+ recommended) and npm.
+Use Node.js 22.18+ (Node 24 was used for validation) and npm. The Node minimum supports the dependency-free TypeScript test runner.
 
 ```sh
 npm ci
-npm run dev
-```
-
-Open http://localhost:3000.
-
-```sh
 npm run typecheck
+npm test
 npm run build
 npm start
 ```
 
+For development use `npm run dev`. Open http://localhost:3000.
+
+Copy `.env.example` to `.env.local` and keep your existing credentials there. The two deterministic solvers work without any provider or database credentials. General AI solving and image understanding require `GEMINI_API_KEY`.
+
+The Gemini model defaults are preserved from the supplied source. If those model identifiers are unavailable in your account, set `GEMINI_MODEL` and `GEMINI_FALLBACK_MODEL` to models you have confirmed are available. No account or model availability is assumed by this repository.
+
 ## Implemented
 
-- Responsive indigo-and-white educational interface, keyboard focus indicators, skip link, semantic form labels, reduced-motion support, and live status messages.
-- Mathematics/physics selection and three explanation levels.
-- Text input with a 5,000-character limit and starter problems.
-- Image selection, drag/drop, type/size validation, preview, and removal (JPG/PNG/WebP; 10 MB maximum).
-- Browser speech recognition with permission and compatibility feedback, stop control, and editable transcription. Requires localhost or HTTPS and a compatible browser. The browser vendor may process speech remotely.
-- Reusable step-based solution renderer and a checked, clearly labeled worked example.
-- Typed multipart API client, server-side request validation, loading/error feedback, and timeout handling.
+- Existing responsive workspace, input controls, KaTeX expression rendering, and result layout.
+- Text, image (JPEG/PNG/WebP, 10 MiB maximum), and browser speech-to-text input. Voice is transcription, not uploaded audio.
+- Provider-independent AI interface with Gemini text/vision, structured output, runtime validation, bounded retries, model fallback, cancellation and deadlines.
+- Deterministic net-force calculation for a bounded one-axis Newton's-second-law grammar.
+- Deterministic real linear equations with exact rational arithmetic, both-side terms, parentheses and constant divisors.
+- Unique, fractional, negative, no-solution, and infinite-solution cases; explicit rejection of division by zero.
+- Independent arithmetic, substitution, unit, dimension, applicability, physical-constraint and explanation checks.
+- Source-backed, version-controlled seed knowledge with runtime schema validation and immutable retrieval.
+- Supabase persistence abstraction preserving the existing `solutions` payload and best-effort saving behavior.
+- A scoped verification indicator; AI fallback responses are explicitly not independently verified.
 
-## Current boundary
+## Try without credentials
 
-This milestone establishes the interface and architecture. AI solving and image understanding are **not connected**. Valid solve requests deliberately return HTTP 503 with `SOLVER_NOT_CONFIGURED`; no arbitrary problem receives a fabricated answer. Inputs remain in the editor after failure and reset on page reload. No database, accounts, history, or provider credentials are included.
+Select **Physics**:
 
-## Structure
+- `A 5 kg object accelerates at 4 m/s². Find the force.` → `20 N`
+- `A 500 g object accelerates at 200 cm/s². Find the force.` → `1 N`
+- `m = 2.5 kg, a = 8 m/s²; find net force` → `20 N`
 
-```text
-src/
-  app/
-    api/solve/route.ts       # Server validation and future provider orchestration
-    globals.css             # Design tokens, Tailwind import, responsive styles
-    layout.tsx              # Metadata and app shell
-    page.tsx                # Route composition
-  components/ui/brand.tsx    # Shared identity component
-  features/solver/
-    components/             # Workspace and reusable solution renderer
-    hooks/use-voice-input.ts # Browser speech adapter and lifecycle
-    services/solver.ts       # Typed browser-to-server transport
-    types/index.ts          # Domain request, result, and solution contracts
+Select **Mathematics**:
+
+- `2x + 6 = 14` → `x = 4`
+- `3x + 1 = 2` → `x = 1/3`
+- `2(x + 3) = 14` → `x = 4`
+- `0x = 5` → no solution
+- `0x = 0` → infinitely many real solutions
+- `x/0 = 1` → clarification, no fabricated answer
+
+Newton input supports kg/g and m/s² or cm/s² (`s^2` and `s2` also accepted). Decimal numbers are exact. A negative acceleration is a signed component along the chosen axis. Applied-force, friction, directional and multi-stage questions use AI rather than receiving an unsupported deterministic verification label. Physics wording outside the documented bounded grammar also uses AI.
+
+Linear input supports one lowercase variable, decimal/rational constants, +, −, multiplication, constant division and parentheses. Variable denominators, nonlinear expressions, multiple equations, ambiguous division followed by implicit multiplication, and additional word-problem constraints use AI. No arbitrary strings are executed.
+
+Every attached image takes the vision path, even when its accompanying text resembles a supported deterministic problem, so diagram context is never silently ignored.
+
+## Architecture
+
+`/api/solve` validates multipart input and invokes the solving service. The composition root supplies knowledge, AI and persistence adapters. The orchestrator runs understanding → retrieval → pattern/method selection → computation → verification → template explanation → response → best-effort persistence.
+
+The existing public fields `title`, `steps`, `answer`, and `note` remain. `id`, `verification`, and `provenance` are generated by Solvy. AI output cannot set them.
+
+Server-only boundaries protect provider and persistence entry points. Browser-safe contracts live in `src/shared/contracts`. The route contains no Gemini or Supabase implementation details.
+
+See [implementation details](docs/IMPLEMENTATION.md), [knowledge maintenance](docs/KNOWLEDGE.md), and [database compatibility](docs/DATABASE.md).
+
+## Verification and trust
+
+A passing report verifies the supported mathematical model and stated assumptions. It does not prove that an image or natural-language problem was interpreted correctly, or that the assumptions describe a real experiment.
+
+The two code-shipped seed domains have source citations and automated tests, but are honestly marked `candidate` pending human subject review. Only the immutable explicitly bundled seed is executable in this milestone; arbitrary candidate imports and runtime AI output are not published or executed as knowledge. Numeric confidence is not invented.
+
+Deterministic explanations use templates. An AI explanation is not needed for these two families, so no model can rewrite a verified result. General AI responses remain unverified.
+
+## Tests
+
+```sh
+npm test
+npm run typecheck
+npm run build
+npm run test:runtime
 ```
 
-## Next integration point
+`test:runtime` starts a production server on port 3123, exercises HTTP endpoints, and stops it. It explicitly blanks provider/database credentials to avoid paid calls or live writes. Set `SOLVY_TEST_PORT` if needed.
 
-Replace the explicit unconfigured response in `src/app/api/solve/route.ts` with a server-only provider adapter. Keep secrets in environment variables, validate provider responses against the solution contract, and add appropriate request limits, authentication, rate limiting, and image decoding before exposing a production AI endpoint. The current MIME checks are usability validation, not a secure image decoder. The renderer accepts structured steps, expressions, an answer, and a note. Add a mathematical typesetting component here when general LaTeX output is introduced; never render unsanitized provider HTML.
+An optional browser regression script is included. Install Playwright separately for browser testing (it is not a production dependency):
+
+```sh
+npm install --no-save --package-lock=false playwright@1.56.1
+npx playwright install chromium
+npm run test:browser
+```
+
+Alternatively set `PLAYWRIGHT_MODULE` to an installed Playwright module. Browser smoke checks cover the real deterministic API, KaTeX, mobile overflow, clarification, mocked image responses, and mocked browser speech recognition. They do not certify real microphone permissions or a paid Gemini image call.
+
+## Deployment boundaries
+
+- Browser deadline: 120 seconds; API deadline: 110 seconds; provider budget: 100 seconds; persistence budget: 4 seconds.
+- Provider attempts are bounded (two per model, up to two default models); SDK internal retry is disabled to avoid multiplying attempts.
+- The hosting platform must support the configured request duration and enforce a request-body limit before buffering multipart input. Header and file signature checks are not a complete image decoder or edge-level size limit.
+- No database migration or access-policy change is made. Confirm existing Supabase key type, table schema and RLS before public release.
+- Authentication, per-user quotas, distributed rate limits, production observability and a durable save queue are outside this milestone.
+- No keys or `.env.local` files are included.

@@ -6,7 +6,10 @@
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --conditions=react-server --experimental-strip-types --test tests/*.test.ts",
+    "test:runtime": "node scripts/runtime-smoke.mjs",
+    "test:browser": "node scripts/runtime-smoke.mjs --browser"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +23,8 @@
     "openai": "^7.27.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "react-katex": "^3.1.0"
+    "react-katex": "^3.1.0",
+    "server-only": "0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -31,5 +35,8 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=22.18.0"
+  }
 }

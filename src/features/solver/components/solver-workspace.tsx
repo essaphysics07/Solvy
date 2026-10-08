@@ -126,16 +126,19 @@ export function SolverWorkspace() {
     setMessage("");
     setSolution(undefined);
     controller.current = new AbortController();
-const timer = setTimeout(() => controller.current?.abort(), 120000);    try {
+    const timer = setTimeout(() => controller.current?.abort(), 120000);
+    try {
       const result = await solveProblem(
         { problem, subject, explanationLevel: level, image: file },
         controller.current.signal,
       );
       if (result.ok) setSolution(result.solution);
       else setMessage(result.message);
-    } catch {
+    } catch (error) {
       setMessage(
-        "We couldn’t connect to the solver. Your problem is saved in this editor; please try again.",
+        error instanceof Error && error.name === "AbortError"
+          ? "The solver timed out. Your problem is still in the editor; please try again."
+          : error instanceof Error ? error.message : "We couldn’t connect to the solver. Please try again.",
       );
     } finally {
       clearTimeout(timer);
@@ -170,9 +173,8 @@ const timer = setTimeout(() => controller.current?.abort(), 120000);    try {
           <p>
             Choose your subject, enter a problem, and pick how much explanation
             you want. Images stay in your browser until you submit. Voice uses
-            your browser’s speech service and may send audio to that service. AI
-            solving and image understanding will be connected in a future
-            release.
+            your browser’s speech service and may send audio to that service. Supported equations and net-force problems use checked calculations. Other
+            problems and images use AI, with verification status shown in the result.
           </p>
           <button onClick={() => setHelp(false)}>Got it</button>
         </aside>
