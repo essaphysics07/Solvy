@@ -1,8 +1,9 @@
-import { affine } from "../computation/expression.ts";
+import { affineBindings } from "../computation/affine-equation.ts";
 import type { LinearProblem, LinearResult } from "./contracts.ts";
 export function solveLinear(problem: LinearProblem): LinearResult {
-  const left = affine(problem.left), right = affine(problem.right);
-  const coefficient = left.a.sub(right.a), rhs = right.b.sub(left.b);
+  // Understanding owns semantic extraction; solving only classifies and isolates.
+  const { coefficient, constant, rhs: rightConstant } = affineBindings(problem);
+  const rhs = rightConstant.sub(constant);
   if (coefficient.zero) return { kind: "linear", classification: rhs.zero ? "infinite" : "none", coefficient, rhs };
   return { kind: "linear", classification: "unique", value: rhs.div(coefficient), coefficient, rhs };
 }

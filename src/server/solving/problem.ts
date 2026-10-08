@@ -1,3 +1,5 @@
+import type { AffineEquation } from "../computation/affine-equation.ts";
+
 export type ProblemDomain =
   | "mathematics"
   | "physics"
@@ -22,4 +24,6 @@ export interface ProblemRepresentation {
   constraints: string[];
   assumptions: string[];
   evidence: string[];
+  /** Domain structure shares the original problem ASTs; absent for non-algebra inputs. */
+  algebra?: AffineEquation;
 }

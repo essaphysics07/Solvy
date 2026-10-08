@@ -1,4 +1,4 @@
-import { parseExpression, affine } from "../computation/expression.ts";
+import { understandAlgebra, toAlgebraRepresentation } from "./algebra.ts";
 import { Rational } from "../computation/rational.ts";
 import type { Understanding, UnderstoodProblem } from "../solvers/contracts.ts";
 import type { SolveInput } from "./input.ts";
@@ -15,74 +15,9 @@ export function understand(input: SolveInput): Understanding {
 
   const source = input.problem.replace(/−|–/g, "-").replace(/×|·/g, "*").trim();
 
-  if (input.subject === "mathematics") return understandLinear(source);
+  if (input.subject === "mathematics") return understandAlgebra(source);
 
   return understandNewton(source);
-}
-
-function understandLinear(source: string): Understanding {
-  const requestedVariable = source.match(
-    /^(?:please\s+)?(?:solve\s+for|find|what\s+is)\s+([a-z])\b/i,
-  )?.[1];
-
-  const body = source
-    .replace(
-      /^(?:please\s+)?(?:solve(?:\s+(?:the\s+)?(?:linear\s+)?equation)?(?:\s+for\s+[a-z])?|find\s+[a-z]|what\s+is\s+[a-z])\s*:?\s*/i,
-      "",
-    )
-    .replace(/[?.]\s*$/, "")
-    .trim();
-
-  // Do not pull a convenient equation out of a larger word problem or ignore extra constraints.
-  const matches = body.match(/[a-z]/g) ?? [];
-  const letters = [...new Set(matches)];
-
-  if (
-    (requestedVariable && requestedVariable !== letters[0]) ||
-    letters.length !== 1 ||
-    !/^[0-9a-z\s.+\-*/()=]+$/.test(body) ||
-    body.split("=").length !== 2
-  ) {
-    return unsupported("Outside the one-variable equation grammar.");
-  }
-
-  try {
-    const [leftText, rightText] = body.split("=");
-
-    const left = parseExpression(leftText, letters[0]);
-    const right = parseExpression(rightText, letters[0]);
-
-    affine(left);
-    affine(right);
-
-    const problem: UnderstoodProblem = {
-      kind: "linear",
-      concept: "linear-equation",
-      pattern: "one-variable-affine",
-      left,
-      right,
-      variable: letters[0],
-      original: body,
-      assumptions: ["Real variable", "Constant nonzero divisors"],
-      difficulty: "introductory",
-    };
-
-    return {
-      status: "understood",
-      problem,
-      representation: toProblemRepresentation(problem),
-    };
-  } catch (error) {
-    if (error instanceof Error && error.message === "Division by zero") {
-      return {
-        status: "clarification",
-        message:
-          "This equation contains division by zero and is undefined. Please correct the denominator.",
-      };
-    }
-
-    return unsupported("The expression is not a supported linear equation.");
-  }
 }
 
 function understandNewton(source: string): Understanding {
@@ -180,19 +115,7 @@ function understandNewton(source: string): Understanding {
 export function toProblemRepresentation(
   problem: UnderstoodProblem,
 ): ProblemRepresentation {
-  if (problem.kind === "linear") {
-    return {
-      domain: "mathematics",
-      subject: "algebra",
-      concept: problem.concept,
-      pattern: problem.pattern,
-      known: [],
-      unknown: [problem.variable],
-      constraints: [],
-      assumptions: problem.assumptions,
-      evidence: [problem.original],
-    };
-  }
+  if (problem.kind === "linear") return toAlgebraRepresentation(problem);
 
   return {
     domain: "physics",

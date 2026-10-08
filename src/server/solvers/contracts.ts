@@ -1,4 +1,4 @@
-import type { Expression } from "../computation/expression.ts";
+import type { AffineEquation } from "../computation/affine-equation.ts";
 import type { Rational } from "../computation/rational.ts";
 import type { Dimension } from "../knowledge/schema.ts";
 import type { ProblemRepresentation } from "../solving/problem.ts";
@@ -20,14 +20,10 @@ export interface NewtonProblem {
   difficulty: "introductory";
 }
 
-export interface LinearProblem {
+export interface LinearProblem extends AffineEquation {
   kind: "linear";
   concept: "linear-equation";
   pattern: "one-variable-affine";
-  left: Expression;
-  right: Expression;
-  variable: string;
-  original: string;
   assumptions: string[];
   difficulty: "introductory";
 }
