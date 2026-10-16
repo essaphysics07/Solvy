@@ -1,3 +1,6 @@
+import { RationalPrecisionError } from "../computation/rational.ts";
+import { understandMathematics } from "./mathematics.ts";
+import { solveMathematics } from "../solvers/mathematics.ts";
 import "server-only";
 import { randomUUID } from "node:crypto";
 import {
@@ -37,6 +40,7 @@ type Executor = (
 ) => ComputedResult;
 
 const executors: Record<string, Executor> = {
+  "exact-mathematics-v1": problem => { if (problem.kind !== "mathematics") throw new Error("Invalid method binding"); return solveMathematics(problem); },
   "newton-net-force-v1": (problem, knowledge) => {
     if (problem.kind !== "newton") {
       throw new Error("Invalid method binding");
@@ -80,7 +84,12 @@ export async function solve(
     throw abortError(signal);
   }
 
-  const interpretation = understand(input);
+  let interpretation = understand(input);
+  // The legacy affine/physics contracts remain stable. New families use the same
+  // representation -> trusted knowledge -> executor -> verifier pipeline.
+  if (interpretation.status === "unsupported" && input.subject === "mathematics" && !input.image) {
+    interpretation = understandMathematics(input.problem);
+  }
 
   if (interpretation.status === "clarification") {
     throw new SolvyError(
@@ -120,7 +129,10 @@ export async function solve(
 
           try {
             result = executor(problem, knowledge);
-          } catch {
+          } catch (error) {
+            if (!(error instanceof RationalPrecisionError)) {
+              throw new SolvyError("INTERNAL_ERROR", "The deterministic calculation could not complete. Please try again.", 500);
+            }
             throw new SolvyError(
               "UNSUPPORTED",
               "The deterministic calculation exceeded its supported limits. Please simplify the problem.",

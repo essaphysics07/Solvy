@@ -2,6 +2,8 @@
 
 The first knowledge bundle is `src/server/knowledge/foundation.ts`. It is typed as `KnowledgeBundle` and runtime-validated by `validateKnowledge()` before being deeply frozen for retrieval.
 
+See [current mathematical coverage](mathematics-foundation.md) and [correctness audit](CORRECTNESS-AUDIT.md). Formula records also support typed algorithm signatures for the bounded mathematics executors. Zero-power simplification is allowed only for a provably nonzero constant base; exclusion sets are not represented.
+
 ## Supported records
 
 - Taxonomy: domain, subject, branch, topic, with stable IDs and parent links.
@@ -26,7 +28,7 @@ Linear equations are parsed into the same AST family and solved by an explicit a
 
 These initial records are source-grounded candidates, not claimed to be human-reviewed. Automated tests check the bundled methods and numerical examples. `validation: passed` is distinct from editorial publication. The records retain `generatedBy: Codex`, a review description indicating that human review is pending, and no fabricated confidence score.
 
-The executable repository returns only the deeply frozen code-shipped bundle. A separate object with the same ID/revision is not enough to make an imported candidate executable. There is no runtime ingestion or automatic AI publishing endpoint.
+The executable repository returns deeply frozen code-shipped bundles: the original foundation and six mathematics packages. The application enables the mathematics profile; the default repository constructor retains the foundation-only compatibility profile. A separate object with the same ID/revision is not enough to make an imported candidate executable. There is no runtime ingestion or automatic AI publishing endpoint.
 
 To extend coverage:
 

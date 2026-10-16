@@ -1,3 +1,4 @@
+import { mathematicsRepresentation } from "./mathematics.ts";
 import { understandAlgebra, toAlgebraRepresentation } from "./algebra.ts";
 import { Rational } from "../computation/rational.ts";
 import type { Understanding, UnderstoodProblem } from "../solvers/contracts.ts";
@@ -115,6 +116,7 @@ function understandNewton(source: string): Understanding {
 export function toProblemRepresentation(
   problem: UnderstoodProblem,
 ): ProblemRepresentation {
+  if (problem.kind === "mathematics") return mathematicsRepresentation(problem);
   if (problem.kind === "linear") return toAlgebraRepresentation(problem);
 
   return {

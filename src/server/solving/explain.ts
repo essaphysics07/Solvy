@@ -1,7 +1,9 @@
+import { explainMathematics } from "./mathematics-explanation.ts";
 import type { ExplanationLevel, SolutionContent } from "../../shared/contracts/solution.ts";
 import type { UnderstoodProblem, ComputedResult } from "../solvers/contracts.ts";
 /** Deterministic explanations lock ALL numerical expressions. No AI call can replace these results. */
 export function explain(problem: UnderstoodProblem, result: ComputedResult, level: ExplanationLevel): SolutionContent {
+  if (problem.kind === "mathematics" && result.kind === "mathematics") return explainMathematics(problem, result, level);
   if (problem.kind === "newton" && result.kind === "newton") {
     const steps = [
       { title: "Identify the quantities", explanation: `Mass is ${problem.mass.value} ${problem.mass.unit}; acceleration is ${problem.acceleration.evidence}. Convert to SI units.`,

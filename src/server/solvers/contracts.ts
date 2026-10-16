@@ -1,3 +1,4 @@
+import type { MathematicsProblem, MathematicsResult } from "./mathematics-contracts.ts";
 import type { AffineEquation } from "../computation/affine-equation.ts";
 import type { Rational } from "../computation/rational.ts";
 import type { Dimension } from "../knowledge/schema.ts";
@@ -28,7 +29,7 @@ export interface LinearProblem extends AffineEquation {
   difficulty: "introductory";
 }
 
-export type UnderstoodProblem = NewtonProblem | LinearProblem;
+export type UnderstoodProblem = NewtonProblem | LinearProblem | MathematicsProblem;
 
 export type Understanding =
   | {
@@ -69,4 +70,4 @@ export type LinearResult =
       rhs: Rational;
     };
 
-export type ComputedResult = NewtonResult | LinearResult;
+export type ComputedResult = NewtonResult | LinearResult | MathematicsResult;
