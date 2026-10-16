@@ -1,3 +1,4 @@
+import { consistentMathematicsRepresentation } from "./mathematics.ts";
 import type { KnowledgeBundle } from "../knowledge/schema.ts";
 import { executablePattern } from "../knowledge/repository.ts";
 import type { ProblemRepresentation } from "./problem.ts";
@@ -20,7 +21,14 @@ export function routeProblem(problem: ProblemRepresentation, knowledge: Knowledg
   const checks = knowledge.verificationRules.filter(item => item.appliesTo === pattern.id);
   if (!formula || !method || checks.length === 0) return unsupported("The knowledge pattern has incomplete solving or verification relationships.");
 
-  if (method.executor === "linear-affine-v1") {
+  if (method.executor === "exact-mathematics-v1") {
+    const semantics = formula.expression;
+    if (!consistentMathematicsRepresentation(problem) || semantics.kind !== "algorithm" ||
+      semantics.operation !== problem.mathematics?.operation || semantics.input !== problem.mathematics?.family ||
+      !pattern.constraints.every(c => problem.constraints.includes(c)) ||
+      !checks.some(c => c.checker === `independent-${semantics.operation}`) ||
+      pattern.unknown.length !== 1 || pattern.unknown[0] !== "result") return unsupported("Mathematics structure or knowledge bindings do not match.");
+  } else if (method.executor === "linear-affine-v1") {
     if (!isConsistentAlgebraRepresentation(problem)) return unsupported("The algebra structure, evidence, or derived quantities are inconsistent.");
     if (!pattern.constraints.every(constraint => problem.constraints.includes(constraint))) return unsupported("The algebra pattern constraints are not satisfied.");
     const known = new Set(problem.known.map(item => item.quantity));

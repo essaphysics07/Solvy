@@ -1,3 +1,4 @@
+import type { MathOperation } from "../solvers/mathematics-contracts.ts";
 import type { Expression } from "../computation/expression.ts";
 import { isRecord } from "../../shared/contracts/solution.ts";
 export type Dimension = readonly [number, number, number, number, number, number, number]; // M L T I Θ N J
@@ -7,20 +8,23 @@ export interface KnowledgeMetadata {
   createdAt: string; updatedAt: string; author: string; generatedBy: string | null;
   review: { method: string; reviewer: string; confidence: { value: number; meaning: string } | null };
 }
+export interface AlgorithmFormula { kind: "algorithm"; operation: MathOperation; input: "polynomial" | "matrix" | "finite-data"; output: "result" }
+export interface Pedagogy { levels: ("school" | "college" | "competitive-exam" | "advanced")[]; difficulty: "introductory" | "intermediate"; examGuidance: string; limitations: string[] }
+export const mathOperations: readonly MathOperation[] = ["calculate", "simplify", "differentiate", "integrate", "definite-integral", "solve-polynomial", "solve-linear-inequality", "minimum", "maximum", "determinant", "inverse", "rank", "linear-system", "mean", "population-variance", "sample-variance", "arithmetic-sum", "geometric-sum", "combinations", "permutations", "binomial-probability", "binomial-at-least"];
 export interface KnowledgeBundle {
   id: string;
   metadata: KnowledgeMetadata;
   taxonomy: { id: string; kind: "domain" | "subject" | "branch" | "topic"; label: string; parent: string | null }[];
-  concepts: { id: string; topic: string; title: string; definitions: string[]; laws: string[]; prerequisites: string[]; related: string[] }[];
-  quantities: { id: string; meaning: string; dimension: Dimension; kind: "scalar" | "component"; domain: string }[];
+  concepts: { id: string; topic: string; title: string; definitions: string[]; laws: string[]; prerequisites: string[]; related: string[]; pedagogy?: Pedagogy }[];
+  quantities: { id: string; meaning: string; dimension: Dimension; kind: "scalar" | "component" | "mathematical-object"; domain: string }[];
   variables: { id: string; symbol: string; quantity: string }[];
   units: { id: string; symbol: string; aliases: string[]; dimension: Dimension; scale: string; offset: string }[];
-  formulas: { id: string; concept: string; display: string; target: string; expression: Expression;
+  formulas: { id: string; concept: string; display: string; target: string; expression: Expression | AlgorithmFormula;
     bindings: Record<string, string>; conditions: string[]; assumptions: string[];
     rearrangements: { target: string; expression: Expression; conditions: string[] }[] }[];
   relationships: { from: string; to: string; kind: "prerequisite" | "related" | "uses" }[];
   patterns: { id: string; concept: string; known: string[]; unknown: string[]; formula: string; method: string; constraints: string[] }[];
-  methods: { id: string; executor: "newton-net-force-v1" | "linear-affine-v1"; operations: string[] }[];
+  methods: { id: string; executor: "newton-net-force-v1" | "linear-affine-v1" | "exact-mathematics-v1"; operations: string[] }[];
   verificationRules: { id: string; checker: string; appliesTo: string; claim: string }[];
   commonMistakes: { id: string; concept: string; trigger: string; guidance: string }[];
   examples: { id: string; problem: string; pattern: string; answer: string }[];
@@ -34,6 +38,7 @@ function fields(value: Record<string, unknown>, names: string[]) { ensure(names.
 function dimensions(value: unknown) { ensure(Array.isArray(value) && value.length === 7 && value.every(Number.isInteger), "seven dimension exponents required"); }
 function expression(value: unknown, depth = 0): string[] {
   record(value); ensure(depth < 20, "expression depth");
+  if(value.kind === "algorithm") { ensure(depth === 0, "algorithm must be a top-level signature"); ensure(mathOperations.includes(value.operation as MathOperation) && ["polynomial", "matrix", "finite-data"].includes(String(value.input)) && value.output === "result", "algorithm signature"); return []; }
   if (value.kind === "number") { ensure(typeof value.value === "string" && /^[+-]?\d+(?:\.\d+)?$/.test(value.value), "numeric literal"); return []; }
   if (value.kind === "variable") { fields(value, ["name"]); return [value.name as string]; }
   if (value.kind === "negate") return expression(value.value, depth + 1);
@@ -42,6 +47,8 @@ function expression(value: unknown, depth = 0): string[] {
 }
 /** Used for built-in records and future ingestion. Shape, references, dimensions, and executable grammar are checked. */
 export function validateKnowledge(value: unknown): KnowledgeBundle {
+  // Ingestion limits also reject cyclic objects before recursive schema traversal.
+  ensure(JSON.stringify(value)?.length <= 1_000_000, "bundle size");
   record(value); fields(value, ["id"]); record(value.metadata);
   const meta = value.metadata;
   ensure(meta.schemaVersion === 1 && Number.isInteger(meta.revision) && Number(meta.revision) > 0, "version");
@@ -75,8 +82,9 @@ export function validateKnowledge(value: unknown): KnowledgeBundle {
   for (const row of rows("concepts")) {
     fields(row, ["title"]); refs([row.topic], "taxonomy");
     ensure(strings(row.definitions) && strings(row.laws), "concept content"); refs(row.prerequisites); refs(row.related);
+    if(row.pedagogy !== undefined) { record(row.pedagogy); ensure(strings(row.pedagogy.levels) && row.pedagogy.levels.length > 0 && row.pedagogy.levels.every(x => ["school","college","competitive-exam","advanced"].includes(x)), "educational levels"); ensure(["introductory","intermediate"].includes(String(row.pedagogy.difficulty)) && strings(row.pedagogy.limitations), "pedagogy"); fields(row.pedagogy,["examGuidance"]); }
   }
-  for (const row of rows("quantities")) { fields(row, ["meaning", "domain"]); dimensions(row.dimension); ensure(row.kind === "scalar" || row.kind === "component", "quantity kind"); }
+  for (const row of rows("quantities")) { fields(row, ["meaning", "domain"]); dimensions(row.dimension); ensure(row.kind === "scalar" || row.kind === "component" || row.kind === "mathematical-object", "quantity kind"); }
   for (const row of rows("variables")) { fields(row, ["symbol"]); refs([row.quantity], "quantities"); }
   for (const row of rows("units")) {
     fields(row, ["symbol", "scale", "offset"]); dimensions(row.dimension); ensure(strings(row.aliases), "unit aliases");
@@ -91,7 +99,18 @@ export function validateKnowledge(value: unknown): KnowledgeBundle {
   }
   for (const row of rows("relationships")) { record(row); refs([row.from, row.to]); ensure(["prerequisite", "related", "uses"].includes(String(row.kind)), "relationship kind"); }
   for (const row of rows("patterns")) { refs([row.concept], "concepts"); refs([row.formula], "formulas"); refs([row.method], "methods"); refs(row.known, "quantities"); refs(row.unknown, "quantities"); ensure(strings(row.constraints), "pattern constraints"); }
-  for (const row of rows("methods")) { ensure(["newton-net-force-v1", "linear-affine-v1"].includes(String(row.executor)) && strings(row.operations), "method executor"); }
+  for (const row of rows("methods")) { ensure(["newton-net-force-v1", "linear-affine-v1", "exact-mathematics-v1"].includes(String(row.executor)) && strings(row.operations), "method executor"); }
+  for (const row of rows("patterns")) {
+    const formula = rows("formulas").find(f => f.id === row.formula)!;
+    const method = rows("methods").find(m => m.id === row.method)!;
+    ensure(formula.concept === row.concept, "pattern formula concept");
+    if(method.executor === "exact-mathematics-v1") {
+      const e = formula.expression as Record<string,unknown>;
+      ensure(e.kind === "algorithm" && row.id === `math-${e.operation}-v1`, "algorithm pattern binding");
+      ensure((e.input === "finite-data") === ["mean","population-variance","sample-variance","arithmetic-sum","geometric-sum","combinations","permutations","binomial-probability","binomial-at-least"].includes(String(e.operation)), "finite data signature");
+      ensure((e.input === "matrix") === ["determinant","inverse","rank","linear-system"].includes(String(e.operation)), "algorithm input family");
+    } else ensure((formula.expression as Record<string,unknown>).kind !== "algorithm", "arithmetic executor formula");
+  }
   for (const row of rows("verificationRules")) { fields(row, ["checker", "claim"]); refs([row.appliesTo], "patterns"); }
   for (const row of rows("commonMistakes")) { fields(row, ["trigger", "guidance"]); refs([row.concept], "concepts"); }
   for (const row of rows("examples")) { fields(row, ["problem", "answer"]); refs([row.pattern], "patterns"); }

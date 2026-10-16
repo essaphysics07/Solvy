@@ -1,5 +1,7 @@
 # Algebra problem representation
 
+> Historical milestone report: solver counts and test totals below describe that earlier snapshot. Current coverage is in [mathematics-foundation.md](mathematics-foundation.md); current audit results are in [CORRECTNESS-AUDIT.md](CORRECTNESS-AUDIT.md).
+
 This change is based on the uploaded source snapshot at archive commit `8be1769ae0d4ab9cdae06073e84361f43f0266a7`. The archive has no Git remote; no remote checkout, commit or push was performed.
 
 ## Scope and design

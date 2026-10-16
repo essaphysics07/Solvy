@@ -1,3 +1,5 @@
+/** Expected bounded-computation failure, distinct from a programming error. */
+export class RationalPrecisionError extends Error {}
 /** Bounded exact rationals. No eval, dynamic code, or floating-point equality. */
 function gcd(a: bigint, b: bigint): bigint {
   a = a < 0n ? -a : a; b = b < 0n ? -b : b;
@@ -9,7 +11,7 @@ export class Rational {
   readonly d: bigint;
   constructor(n: bigint, d = 1n) {
     if (d === 0n) throw new Error("Division by zero");
-    if (n.toString().length > 256 || d.toString().length > 256) throw new Error("Number exceeds supported precision");
+    if (n.toString().length > 256 || d.toString().length > 256) throw new RationalPrecisionError("Number exceeds supported precision");
     if (d < 0n) { n = -n; d = -d; }
     const divisor = gcd(n, d);
     this.n = n / divisor; this.d = d / divisor;

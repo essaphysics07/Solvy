@@ -16,7 +16,7 @@ npm start
 
 For development use `npm run dev`. Open http://localhost:3000.
 
-Copy `.env.example` to `.env.local` and keep your existing credentials there. The two deterministic solvers work without any provider or database credentials. General AI solving and image understanding require `GEMINI_API_KEY`.
+Copy `.env.example` to `.env.local` and keep your existing credentials there. The supported deterministic paths work without any provider or database credentials. General AI solving and image understanding require `GEMINI_API_KEY`.
 
 The Gemini model defaults are preserved from the supplied source. If those model identifiers are unavailable in your account, set `GEMINI_MODEL` and `GEMINI_FALLBACK_MODEL` to models you have confirmed are available. No account or model availability is assumed by this repository.
 
@@ -28,6 +28,7 @@ The Gemini model defaults are preserved from the supplied source. If those model
 - Deterministic net-force calculation for a bounded one-axis Newton's-second-law grammar.
 - Deterministic real linear equations with exact rational arithmetic, both-side terms, parentheses and constant divisors.
 - Unique, fractional, negative, no-solution, and infinite-solution cases; explicit rejection of division by zero.
+- Bounded polynomial algebra, real quadratics, affine inequalities, polynomial calculus/extrema, rational matrices and linear systems, finite sequence sums, counting/binomial probability and descriptive statistics. See [coverage and syntax](docs/mathematics-foundation.md).
 - Independent arithmetic, substitution, unit, dimension, applicability, physical-constraint and explanation checks.
 - Source-backed, version-controlled seed knowledge with runtime schema validation and immutable retrieval.
 - Supabase persistence abstraction preserving the existing `solutions` payload and best-effort saving behavior.
@@ -52,7 +53,7 @@ Select **Mathematics**:
 
 Newton input supports kg/g and m/s² or cm/s² (`s^2` and `s2` also accepted). Decimal numbers are exact. A negative acceleration is a signed component along the chosen axis. Applied-force, friction, directional and multi-stage questions use AI rather than receiving an unsupported deterministic verification label. Physics wording outside the documented bounded grammar also uses AI.
 
-Linear input supports one lowercase variable, decimal/rational constants, +, −, multiplication, constant division and parentheses. Variable denominators, nonlinear expressions, multiple equations, ambiguous division followed by implicit multiplication, and additional word-problem constraints use AI. No arbitrary strings are executed.
+Linear input supports one lowercase variable, decimal/rational constants, +, −, multiplication, constant division and parentheses. The affine parser rejects nonlinear expressions; the mathematics extension handles documented polynomial and augmented-matrix cases. Variable denominators, unsupported equation forms, ambiguous division followed by implicit multiplication, and additional word-problem constraints use AI. No arbitrary strings are executed.
 
 Every attached image takes the vision path, even when its accompanying text resembles a supported deterministic problem, so diagram context is never silently ignored.
 
@@ -70,9 +71,13 @@ See [implementation details](docs/IMPLEMENTATION.md), [knowledge maintenance](do
 
 A passing report verifies the supported mathematical model and stated assumptions. It does not prove that an image or natural-language problem was interpreted correctly, or that the assumptions describe a real experiment.
 
-The two code-shipped seed domains have source citations and automated tests, but are honestly marked `candidate` pending human subject review. Only the immutable explicitly bundled seed is executable in this milestone; arbitrary candidate imports and runtime AI output are not published or executed as knowledge. Numeric confidence is not invented.
+The foundation and six mathematics packages have source citations and automated tests, but are honestly marked `candidate` pending human subject review. Only immutable explicitly bundled seeds are executable in this milestone; arbitrary candidate imports and runtime AI output are not published or executed as knowledge. Numeric confidence is not invented.
 
-Deterministic explanations use templates. An AI explanation is not needed for these two families, so no model can rewrite a verified result. General AI responses remain unverified.
+Deterministic explanations use templates. An AI explanation is not needed for supported deterministic patterns, so no model can rewrite a verified result. General AI responses remain unverified.
+
+Zero powers require a provably nonzero constant base. Inputs such as `x^0`, `(x-1)^0` and `0^0` are unsupported deterministically because the AST does not carry excluded values; they cannot receive deterministic verification. Constant reductions such as `(x-x+1)^0` remain supported. No general trigonometric, complex, differential-equation or universal mathematics support is claimed.
+
+See the [correctness audit](docs/CORRECTNESS-AUDIT.md) for the current validation results, source baseline and minimal patch instructions.
 
 ## Tests
 

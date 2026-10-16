@@ -13,7 +13,7 @@ export function solveNewton(problem: NewtonProblem, knowledge: KnowledgeBundle):
   const accelerationSI = Rational.parse(problem.acceleration.value).mul(Rational.parse(accelerationUnit.scale));
   if (massSI.n <= 0n) throw new Error("Mass must be positive");
   const formula = knowledge.formulas.find(f => f.id === "newton-F-ma");
-  if (!formula) throw new Error("Formula unavailable");
+  if (!formula || formula.expression.kind === "algorithm") throw new Error("Formula unavailable");
   const value = evaluate(formula.expression, { m: massSI, a: accelerationSI });
   const dimension = massUnit.dimension.map((v, i) => v + accelerationUnit.dimension[i]) as unknown as Dimension;
   return { kind: "newton", value, massSI, accelerationSI, unit: "N", dimension };

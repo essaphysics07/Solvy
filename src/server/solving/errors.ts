@@ -1,7 +1,7 @@
 export type ErrorCode = "INVALID_PROBLEM" | "INVALID_IMAGE" | "INVALID_OPTIONS" |
   "INVALID_REQUEST" | "AI_NOT_CONFIGURED" | "AI_AUTH" | "AI_RATE_LIMIT" | "AI_UNAVAILABLE" |
   "AI_INVALID_OUTPUT" | "AI_ERROR" | "SOLVE_TIMEOUT" | "CANCELLED" | "CLARIFICATION_REQUIRED" |
-  "UNSUPPORTED" | "VERIFICATION_FAILED";
+  "UNSUPPORTED" | "VERIFICATION_FAILED" | "INTERNAL_ERROR";
 export class SolvyError extends Error {
   readonly code: ErrorCode;
   readonly httpStatus: number;
@@ -15,5 +15,5 @@ export class SolvyError extends Error {
   }
 }
 export function publicError(error: unknown): SolvyError {
-  return error instanceof SolvyError ? error : new SolvyError("AI_ERROR", "The solver could not complete this problem. Please try again.");
+  return error instanceof SolvyError ? error : new SolvyError("INTERNAL_ERROR", "The solver could not complete this problem. Please try again.", 500);
 }

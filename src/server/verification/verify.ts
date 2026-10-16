@@ -1,3 +1,4 @@
+import { mathematicsChecks } from "./mathematics.ts";
 import type { ExplanationLevel, SolutionContent, VerificationCheck, VerificationReport } from "../../shared/contracts/solution.ts";
 import type { UnderstoodProblem, ComputedResult, NewtonProblem, NewtonResult, LinearProblem, LinearResult } from "../solvers/contracts.ts";
 import type { KnowledgeBundle } from "../knowledge/schema.ts";
@@ -57,7 +58,8 @@ export function verify(problem: UnderstoodProblem, result: ComputedResult, knowl
   content?: SolutionContent, level: ExplanationLevel = "step-by-step"): VerificationReport {
   let checks: VerificationCheck[];
   try {
-    if (problem.kind === "newton" && result.kind === "newton") checks = newtonChecks(problem, result, knowledge);
+    if (problem.kind === "mathematics" && result.kind === "mathematics") checks = mathematicsChecks(problem, result);
+    else if (problem.kind === "newton" && result.kind === "newton") checks = newtonChecks(problem, result, knowledge);
     else if (problem.kind === "linear" && result.kind === "linear") checks = linearChecks(problem, result);
     else throw new Error("Mismatched computation");
     if (content) {
@@ -69,6 +71,6 @@ export function verify(problem: UnderstoodProblem, result: ComputedResult, knowl
     checks = [{ checkerId: "verification-input", checkerVersion: "1.0.0", claim: "Result can be independently checked", expected: "Well-formed supported computation", observed: "Check could not complete", status: "INCONCLUSIVE", evidence: "Unverifiable results are not promoted to verified." }];
   }
   const status = checks.some(c => c.status === "FAIL") ? "FAILED" : checks.some(c => c.status === "INCONCLUSIVE") ? "PARTIAL" : "VERIFIED_WITHIN_SCOPE";
-  return { status, scope: problem.kind === "newton" ? "Exact net-force calculation, units, dimensions, and applicability under the stated one-axis assumptions. Input interpretation is not independently verified." :
+  return { status, scope: problem.kind === "mathematics" ? "Exact bounded mathematics checked independently against the parsed original expression or matrix. Input interpretation is outside this scope." : problem.kind === "newton" ? "Exact net-force calculation, units, dimensions, and applicability under the stated one-axis assumptions. Input interpretation is not independently verified." :
     "Exact real linear-equation solution set checked against the parsed original equation. Input transcription is outside this scope.", checks };
 }

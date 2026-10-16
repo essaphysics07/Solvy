@@ -1,3 +1,4 @@
+import type { MathematicsProblem } from "../solvers/mathematics-contracts.ts";
 import type { AffineEquation } from "../computation/affine-equation.ts";
 
 export type ProblemDomain =
@@ -26,4 +27,5 @@ export interface ProblemRepresentation {
   evidence: string[];
   /** Domain structure shares the original problem ASTs; absent for non-algebra inputs. */
   algebra?: AffineEquation;
+  mathematics?: MathematicsProblem;
 }

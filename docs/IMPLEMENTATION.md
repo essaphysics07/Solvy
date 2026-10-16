@@ -1,5 +1,7 @@
 # Solvy implementation milestone
 
+> Historical milestone report: solver counts and test totals below describe that earlier snapshot. Current coverage is in [mathematics-foundation.md](mathematics-foundation.md); current audit results are in [CORRECTNESS-AUDIT.md](CORRECTNESS-AUDIT.md).
+
 ## Authoritative-source reconciliation
 
 Work began from the newly supplied `Solvy-main (1).zip`, whose archive comment identifies commit `03133101537427f78ff22877f7513938a1286c63`. The archive has no `.git` directory or remote URL, and no GitHub repository address was available in this session. Live `main` therefore could not be fetched or independently verified. No remote branch was modified or pushed. Reconcile this patch with current `main` before committing it.
